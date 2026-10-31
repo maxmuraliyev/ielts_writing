@@ -61,8 +61,11 @@ router.post(
       });
 
       res.json(assessmentResult);
-    } catch (err) {
-      next(err);
+    } catch (err: any) {
+      console.error('[Assess Route Caught Error]:', err?.message || err);
+      res.status(err?.status || 500).json({
+        error: err?.message || 'An unexpected error occurred while assessing the essay.'
+      });
     } finally {
       // Immediately clean up temporary files from disk
       if (filePathsToClean.length > 0) {

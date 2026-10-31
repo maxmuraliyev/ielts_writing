@@ -63,7 +63,16 @@ if (fs.existsSync(clientDistPath)) {
 // Centralized error handler
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Global unhandled error handlers for serverless diagnostics
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process Unhandled Rejection]:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process Uncaught Exception]:', err);
+});
+
+// NEVER call app.listen inside a Vercel serverless environment
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
   app.listen(config.port, () => {
     console.log(`[IELTS Examiner Server] Running on http://localhost:${config.port}`);
     console.log(`[Configuration] Text Model: ${config.groq.textModel} | Vision Model: ${config.groq.visionModel}`);
