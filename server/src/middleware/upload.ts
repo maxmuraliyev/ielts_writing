@@ -4,21 +4,8 @@ import fs from 'fs';
 import { config } from '../config.js';
 import { isSupportedFileType } from '../services/documentParser.js';
 
-// Ensure temp directory exists
-if (!fs.existsSync(config.upload.tempDir)) {
-  fs.mkdirSync(config.upload.tempDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, config.upload.tempDir);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  }
-});
+// Use memoryStorage for serverless and cloud compatibility (no read-only disk writes)
+const storage = multer.memoryStorage();
 
 const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (isSupportedFileType(file.mimetype, file.originalname)) {

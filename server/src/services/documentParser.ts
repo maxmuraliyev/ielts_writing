@@ -75,10 +75,14 @@ export async function processImageBuffer(
 }
 
 /**
- * Processes an uploaded file (Image or PDF)
+ * Processes an uploaded file (Image or PDF) from Buffer or file path
  */
-export async function processUploadedFile(filePath: string, originalName: string, mimetype: string): Promise<ProcessedDocument> {
-  const fileBuffer = await fs.readFile(filePath);
+export async function processUploadedFile(
+  fileOrBuffer: string | Buffer,
+  originalName: string,
+  mimetype: string
+): Promise<ProcessedDocument> {
+  const fileBuffer = Buffer.isBuffer(fileOrBuffer) ? fileOrBuffer : await fs.readFile(fileOrBuffer);
   const ext = path.extname(originalName).toLowerCase();
 
   if (ext === '.pdf' || mimetype === 'application/pdf') {
@@ -106,6 +110,7 @@ export async function processUploadedFile(filePath: string, originalName: string
  */
 export async function cleanupFiles(filePaths: string[]): Promise<void> {
   for (const fp of filePaths) {
+    if (!fp) continue;
     try {
       await fs.unlink(fp);
     } catch {

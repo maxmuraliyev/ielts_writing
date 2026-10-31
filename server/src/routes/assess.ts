@@ -11,7 +11,7 @@ router.post(
   uploadMiddleware.array('files', 5),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const uploadedFiles = (req.files as Express.Multer.File[]) || [];
-    const filePathsToClean: string[] = uploadedFiles.map((f) => f.path);
+    const filePathsToClean: string[] = uploadedFiles.map((f) => f.path).filter(Boolean);
 
     try {
       const taskType = (req.body.taskType as TaskType) || 'task1';
@@ -32,7 +32,8 @@ router.post(
 
       // Process uploaded files (images or PDFs)
       for (const file of uploadedFiles) {
-        const processed = await processUploadedFile(file.path, file.originalname, file.mimetype);
+        const fileData = file.buffer || file.path;
+        const processed = await processUploadedFile(fileData, file.originalname, file.mimetype);
         if (processed.text) {
           questionText += (questionText ? '\n\n' : '') + `[Extracted from ${file.originalname}]:\n${processed.text}`;
         }

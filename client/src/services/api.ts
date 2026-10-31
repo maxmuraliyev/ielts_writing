@@ -42,24 +42,44 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-export async function checkServerHealth() {
-  const res = await fetch('/api/health');
-  if (!res.ok) throw new Error(`Server returned ${res.status}`);
-  return res.json();
+async function handleResponse<T>(res: Response, fallbackError: string): Promise<T> {
+  const text = await res.text();
+  let json: any = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Non-JSON response (e.g. plain text or HTML error page from Vercel/proxy)
+  }
+
+  if (!res.ok) {
+    const errorMsg =
+      json?.error ||
+      (text && text.length < 250 ? text : `${fallbackError} (HTTP ${res.status})`);
+    throw new Error(errorMsg);
+  }
+
+  if (json === null) {
+    throw new Error(`Unexpected non-JSON response from server (HTTP ${res.status}): ${text.slice(0, 120)}`);
+  }
+
+  return json as T;
 }
 
-export async function fetchGroqModels() {
+export async function checkServerHealth(): Promise<any> {
+  const res = await fetch('/api/health');
+  return handleResponse<any>(res, 'Server health check failed');
+}
+
+export async function fetchGroqModels(): Promise<any> {
   const res = await fetch('/api/models', {
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
-  return res.json();
+  return handleResponse<any>(res, 'Failed to fetch models');
 }
 
 export async function fetchBandDescriptors(taskType: TaskType) {
   const res = await fetch(`/api/models/descriptors/${taskType}`);
-  if (!res.ok) throw new Error(`Failed to fetch descriptors: ${res.status}`);
-  return res.json();
+  return handleResponse<any>(res, 'Failed to fetch descriptors');
 }
 
 export async function submitAssessment(
@@ -83,10 +103,6 @@ export async function submitAssessment(
     body: formData
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || `Assessment failed with status ${res.status}`);
-  }
-
-  return data as AssessmentResult;
+  return handleResponse<AssessmentResult>(res, 'Assessment failed');
 }
+

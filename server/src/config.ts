@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 // Look for .env in current working dir, parent dir, or workspace root
 const possibleEnvPaths = [
@@ -28,6 +29,6 @@ export const config = {
   upload: {
     maxFileSize: 15 * 1024 * 1024, // 15MB
     maxFiles: 5,
-    tempDir: path.resolve(process.cwd(), 'temp_uploads')
+    tempDir: path.join(os.tmpdir(), 'ielts_uploads')
   }
 };

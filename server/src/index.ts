@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
@@ -14,6 +15,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust reverse proxy (essential for Vercel, rate limiter, and accurate client IP)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -21,27 +25,40 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Apply rate limiter to API routes
 app.use('/api', apiRateLimiter);
+app.use(apiRateLimiter);
 
-// API Routes
+// API Routes - mount under both /api and root for maximum proxy compatibility
 app.use('/api/health', healthRouter);
+app.use('/health', healthRouter);
+
 app.use('/api/models', modelsRouter);
+app.use('/models', modelsRouter);
+
 app.use('/api/assess', assessRouter);
+app.use('/assess', assessRouter);
 
-// In production, serve frontend client build
+// In local production monolithic mode, serve frontend client build if present
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
-app.use(express.static(clientDistPath));
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
 
-app.get('*', (_req, res, next) => {
-  if (_req.path.startsWith('/api')) {
-    next();
-    return;
-  }
-  res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
-    if (err) {
-      res.status(404).send('IELTS Writing Examiner API is running. Client frontend not built yet.');
+  app.get('*', (_req, res, next) => {
+    if (
+      _req.path.startsWith('/api') ||
+      _req.path.startsWith('/health') ||
+      _req.path.startsWith('/models') ||
+      _req.path.startsWith('/assess')
+    ) {
+      next();
+      return;
     }
+    res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
+      if (err) {
+        res.status(404).send('IELTS Writing Examiner API is running.');
+      }
+    });
   });
-});
+}
 
 // Centralized error handler
 app.use(errorHandler);
