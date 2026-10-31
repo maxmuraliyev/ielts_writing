@@ -46,8 +46,13 @@ app.get('*', (_req, res, next) => {
 // Centralized error handler
 app.use(errorHandler);
 
-app.listen(config.port, () => {
-  console.log(`[IELTS Examiner Server] Running on http://localhost:${config.port}`);
-  console.log(`[Configuration] Text Model: ${config.groq.textModel} | Vision Model: ${config.groq.visionModel}`);
-  console.log(`[API Key Status] ${config.groq.apiKey ? 'Configured from Environment' : 'Not configured in environment (pass via header/dialog)'}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(config.port, () => {
+    console.log(`[IELTS Examiner Server] Running on http://localhost:${config.port}`);
+    console.log(`[Configuration] Text Model: ${config.groq.textModel} | Vision Model: ${config.groq.visionModel}`);
+    console.log(`[API Key Status] ${config.groq.apiKey ? 'Configured from Environment' : 'Not configured in environment (pass via header/dialog)'}`);
+  });
+}
+
+export default app;
+
