@@ -3,7 +3,14 @@ import { uploadMiddleware } from '../middleware/upload.js';
 import { processUploadedFile, cleanupFiles } from '../services/documentParser.js';
 import { groqService } from '../services/groq.js';
 const router = Router();
-router.post('/', uploadMiddleware.array('files', 5), async (req, res, next) => {
+router.post('/', (req, res, next) => {
+    // Only invoke multer if request is actually multipart/form-data
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+        return uploadMiddleware.array('files', 5)(req, res, next);
+    }
+    next();
+}, async (req, res, next) => {
     const uploadedFiles = req.files || [];
     const filePathsToClean = uploadedFiles.map((f) => f.path).filter(Boolean);
     try {
@@ -18,8 +25,9 @@ router.post('/', uploadMiddleware.array('files', 5), async (req, res, next) => {
             res.status(400).json({ error: 'Essay text is required and cannot be empty.' });
             return;
         }
-        const imageUrls = [];
-        // Process uploaded files (images or PDFs)
+        // Collect image URLs from JSON body or from uploaded files
+        const imageUrls = Array.isArray(req.body.imageUrls) ? [...req.body.imageUrls] : [];
+        // Process any uploaded files (images or PDFs) if sent via multipart
         for (const file of uploadedFiles) {
             const fileData = file.buffer || file.path;
             const processed = await processUploadedFile(fileData, file.originalname, file.mimetype);

@@ -88,19 +88,33 @@ export async function submitAssessment(
   essayText: string,
   files: File[] = []
 ): Promise<AssessmentResult> {
-  const formData = new FormData();
-  formData.append('taskType', taskType);
-  formData.append('questionText', questionText);
-  formData.append('essayText', essayText);
+  let imageUrls: string[] = [];
 
-  for (const file of files) {
-    formData.append('files', file);
+  if (files.length > 0) {
+    const filePromises = files.map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error(`Failed to read image ${file.name}`));
+          reader.readAsDataURL(file);
+        })
+    );
+    imageUrls = await Promise.all(filePromises);
   }
 
   const res = await fetch('/api/assess', {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: formData
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      taskType,
+      questionText,
+      essayText,
+      imageUrls
+    })
   });
 
   return handleResponse<AssessmentResult>(res, 'Assessment failed');

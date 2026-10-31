@@ -8,7 +8,14 @@ const router = Router();
 
 router.post(
   '/',
-  uploadMiddleware.array('files', 5),
+  (req, res, next) => {
+    // Only invoke multer if request is actually multipart/form-data
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+      return uploadMiddleware.array('files', 5)(req, res, next);
+    }
+    next();
+  },
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const uploadedFiles = (req.files as Express.Multer.File[]) || [];
     const filePathsToClean: string[] = uploadedFiles.map((f) => f.path).filter(Boolean);
@@ -28,9 +35,10 @@ router.post(
         return;
       }
 
-      const imageUrls: string[] = [];
+      // Collect image URLs from JSON body or from uploaded files
+      const imageUrls: string[] = Array.isArray(req.body.imageUrls) ? [...req.body.imageUrls] : [];
 
-      // Process uploaded files (images or PDFs)
+      // Process any uploaded files (images or PDFs) if sent via multipart
       for (const file of uploadedFiles) {
         const fileData = file.buffer || file.path;
         const processed = await processUploadedFile(fileData, file.originalname, file.mimetype);

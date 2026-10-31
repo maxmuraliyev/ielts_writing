@@ -23,9 +23,10 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Apply rate limiter to API routes
-app.use('/api', apiRateLimiter);
-app.use(apiRateLimiter);
+// Apply rate limiter when running locally outside Vercel serverless
+if (!process.env.VERCEL) {
+  app.use('/api', apiRateLimiter);
+}
 
 // API Routes - mount under both /api and root for maximum proxy compatibility
 app.use('/api/health', healthRouter);
