@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["iad1"],
   "services": {
     "client": {
       "root": "client",
@@ -21,8 +22,7 @@
     {
       "source": "/api/(.*)",
       "destination": {
-        "service": "server",
-        "path": "/api/$1"
+        "service": "server"
       }
     },
     {
