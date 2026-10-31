@@ -217,3 +217,5 @@ Total: 25 passed out of 25 tests.
 
 1. **Groq Free-Tier Rate Limits**: Free Groq API accounts have requests-per-minute (RPM) and tokens-per-minute (TPM) limits. If reached, the application displays a friendly countdown warning.
 2. **Scanned Hand-Drawn Diagrams**: Highly degraded or low-contrast handwritten sketches might produce uncertain labels; the vision engine explicitly marks ambiguous figures as uncertain rather than guessing.
+3. **Vercel Region**: Deployed to Washington, D.C. (`iad1`) for direct low-latency Groq AI API access.
+
